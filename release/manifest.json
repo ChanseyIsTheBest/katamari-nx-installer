@@ -3,11 +3,11 @@
   "builds": [
     {
       "edition": "Xbox 360 disc (Beautiful Katamari, NTSC-U)",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "xex_sha256": "562e25174593942b4a6425cae9afa0e45c64d3711de58cd1a6772cdd916279f1",
       "nro": "katamari-nx.nro",
-      "nro_sha256": "24883292523992830b7b459752ecbc95b77c4362aa9782969179ab36e98e0ead",
-      "nro_size": 62062884,
+      "nro_sha256": "76a951fec168d33787dbf888939b662e3f8845a8bfeffa124e3701f31cca4e0e",
+      "nro_size": 62087460,
       "game_files": 1391,
       "game_bytes": 2869886090,
       "deko3d": {
