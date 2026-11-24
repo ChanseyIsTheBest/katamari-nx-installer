@@ -1,6 +1,6 @@
 <div align=center>
 
-<img src="icons/icon-192.png" alt="Beautiful Katamari" width="20%">
+<img src="icon.png" alt="Beautiful Katamari" width="20%">
 
 </div>
 <h1 align=center>katamari-nx installer</h1>
@@ -9,93 +9,61 @@ The installer page of [katamari-nx](https://github.com/ChanseyIsTheBest/katamari
 Beautiful Katamari (Xbox 360): **https://chanseyisthebest.github.io/katamari-nx-installer/**
 
 You give it your own copy of the game (the disc image, or a folder you extracted it into), with the DLC packages if you
-have them, and it gives you a zip ready to extract into `sdmc:/switch/`. Everything runs in your browser: the game files
-never leave your computer.
+have them, and it gives you `katamari-nx.zip`, ready to extract into `sdmc:/switch/`. Everything runs in your browser:
+the game files never leave your computer.
+
+Since 1.0.2 the page is [renut_nx_ultimate_installer](https://github.com/ChanseyIsTheBest/renut_nx_ultimate_installer)'s,
+the installer of the ports made from the ultimate base, with Beautiful Katamari's `game.json`.
 
 ## What it does
 
-1. Finds the game in what you chose: a disc image (`.iso`: a full dump, read in place through its XDVDFS game partition,
-   or an image rebuilt by extract-xiso; nothing is extracted to disk), or a folder with `default.xex`. The DLC packages
-   of the game (content type 2 of title `4E4D07DC`) are picked up too, wherever they are among the chosen files.
+1. Finds the game in what you chose: a disc image (`.iso`, read in place: `lib/xiso.js`) or a folder with
+   `default.xex`, and checks that the copy is whole (`lib/game_check.js`: every file of the build, with its size).
 2. Identifies the game by the SHA-256 of `default.xex` and picks its build from `release/manifest.json`.
-3. Downloads that build's NRO and checks its SHA-256.
+3. Downloads that build's NRO and release files and checks each one's SHA-256.
 4. Makes the shaders of the deko3d renderer (the NRO holds no shader of the game and reads `deko3d_glsl.bin` beside
-   itself). Beautiful Katamari keeps its 195 shaders in two places: 111 as Direct3D shader containers in `default.xex`,
-   84 inside the models of `d02.dat`-`d05.dat`, in CPDB blocks (`lib/cpdb.js`, the game's own decompression). The build's
-   entry lists the 57 records that hold those 84 and where each container is in them, so only those are read and
-   decoded. Each container goes through katamari-nx's native chain in the page: Renut's XenosRecomp translates it to HLSL
-   (`wasm/renut_hlsl`), the alpha-tested pixel shaders get their early alpha copy (`lib/early_alpha.js`), DXC compiles it
-   to SPIR-V (`wasm/dxc_web`), SPIRV-Cross turns that into GLSL (`wasm/spirv_cross`), banjo-nx's passes trim it
-   (`lib/deko3d_glsl.js`) and `lib/deko3d_package.js` packs them. The package must match the tested one (its SHA-256 is in
-   `release/manifest.json`). The console compiles each shader with uam the first time the game uses it and keeps the
-   result.
-5. Streams the zip to disk through the service worker, so a whole disc never has to fit in memory.
+   itself): 111 of Beautiful Katamari's 195 shaders are in `default.xex`, 84 inside the models of `d02.dat`-`d05.dat`
+   (the build's entry lists the 57 records that hold them). Each one goes through the base's own chain in the page
+   (Renut's translator, DXC, SPIRV-Cross, the base's Python passes in Pyodide), and the console's DKSH cache is
+   compiled from the variants the release lists (`deko3d_shaders.bin`, with `pipeline_list.bin`), so the game meets
+   few shaders it has to compile itself.
+5. Packs the game's files as LZ4 blocks (the movies as ZXC), re-encodes the music and voices to Opus (the browser's
+   encoder) and, if your browser has an H.265 encoder (Chrome or Edge on a recent graphics card), the movies to H.265,
+   which the Switch's video hardware plays. Beautiful Katamari: about 1.6 GB on the SD card instead of 2.9 GB.
+6. Writes the game folder's index (`cache/vfs_index_game_root.bin`), so the first start skips the folder scan.
+7. Streams the zip to disk through the service worker, so a whole disc never has to fit in memory.
 
-The zip holds `katamari-nx/katamari-nx.nro` with its `LICENSES.txt`, `deko3d_glsl.bin`, the game in `game_root/` (as on
-the disc, without the console's system update) and, if you chose it, the DLC in `dlc/` (the game installs it at its first
-start). The update zip holds the NRO, its licenses and the shaders (and the DLC if you chose it). Neither holds
-`katamari.toml`: the game writes it at its first start, so an update never overwrites your settings.
-
-The page and the downloaded program are cached by the service worker: after the first visit it also works without a
-connection.
-
-## Layout
-
-| Path | Contents |
-|---|---|
-| `index.html`, `app.js` | The page and its interface (English and Japanese, `lib/i18n.js`) |
-| `worker.js` | Builds the package off the main thread |
-| `sw.js` | Offline cache and the download stream |
-| `lib/` | Disc image reader (XDVDFS), STFS header reader, XEX reader, CPDB decoder, the deko3d shaders (`shaders.js`, `deko3d.js`, `early_alpha.js`, `deko3d_glsl.js`, `deko3d_package.js`), zip writer |
-| `wasm/` | WebAssembly builds of the shader translator, DXC, SPIRV-Cross and the LZX decoder |
-| `renut_shader_common.h` | Renut's translator's HLSL header (from `app/thirdparty/reblue-XenosRecomp/XenosRecomp` of katamari-nx) |
-| `release/` | The list of builds and the licenses of the NRO |
-| `test/` | Node scripts that run the same code as the page |
-
-`wasm/renut_hlsl.*` (Renut's translator with katamari-nx's `tools/renut_hlsl_frontend.cpp`) and `wasm/spirv_cross.*` are
-built with `wasm/src/deko3d/build_wasm_deko3d.sh`. `wasm/dxc_web.*` is the WebAssembly DXC of
-[nfsmw-nx-installer](https://github.com/StevensND/nfsmw-nx-installer); see [NOTICES.md](NOTICES.md).
+The zip holds `katamari-nx/katamari-nx.nro` with its `LICENSES.txt`, the shader files, the game in `game_root/` and, if
+you chose them, the DLC packages in `dlc/` (the game reads them in place). It holds no `katamari.toml`: the game writes
+it at its first start, so extracting a new zip never overwrites your settings.
 
 ## Deployment
 
 The NRO is not stored here: it is the `katamari-nx.nro` asset of a release of the katamari-nx repository of the same
-owner. The workflow in `.github/workflows/deploy.yml` downloads it from the latest release, checks its SHA-256 against
-the list and publishes the page on GitHub Pages. It runs on every push to `main`; after publishing a new release, run it
-by hand from the Actions tab.
+owner. The workflow in `.github/workflows/deploy.yml` downloads it from the latest release, checks it and the other
+release files against `release/manifest.json` (`.github/verify_release.mjs`) and publishes the page on GitHub Pages. It
+runs on every push to `main`; after publishing a new release, run it by hand from the Actions tab.
 
-To publish a new build, this script writes the build's entry in `release/manifest.json` from your own copy of the game,
-with the page's code. The third argument comes from katamari-nx's `tools/katamari_shader_files.py`:
-
-```sh
-node test/release_node.mjs <disc image or game folder> <katamari-nx.nro> <katamari_shader_files.json> --version 1.0.0 --write
-```
-
-It leaves the page's `deko3d_glsl.bin` in `release/` (not committed): test the NRO with exactly that file next to it.
+A new build's release files are made in renut_nx_ultimate_installer with `tools/make_release.py` (the NRO, the shader
+records from katamari-nx's `tools/katamari_shader_files.py`, a pipeline list) and `test/full_node.mjs --reference`, as
+its README describes, and copied here with the rest of the page.
 
 ## Testing locally
 
-Put `katamari-nx.nro` in `release/` and serve the folder (any static server works; this one sets the right MIME types):
+Put `katamari-nx.nro` in `release/` and serve the folder:
 
 ```sh
 python serve.py 8193
 ```
 
-Then open http://127.0.0.1:8193/. The same code runs in Node:
-
-```sh
-node test/package_node.mjs katamari-nx.zip <disc image or game folder> [<DLC packages> ...]
-node test/package_node.mjs katamari-nx-update.zip <disc image or game folder> --update
-node test/deko3d_node.mjs <disc image or game folder> <katamari_shader_files.json> [<katamari-nx's out/deko3d_shaders/glsl_opt>] [--out deko3d_glsl.bin]
-node test/cpdb_node.mjs <game folder> <katamari_shader_files.json>
-node test/texts_node.mjs
-```
+Then open http://127.0.0.1:8193/. The same code runs in Node and in a headless browser (`test/full_node.mjs`,
+`test/browser.html` with `serve.py --test-files`; `test/check_zip.py` checks a zip against the game).
 
 ## License
 
 GPL-3.0 (see [LICENSE](LICENSE)). Third-party components are listed in [NOTICES.md](NOTICES.md). The page is built on
-[futari-nx-installer](https://github.com/ChanseyIsTheBest/futari-nx-installer), itself built on
-[sa2-nx-installer](https://github.com/ChanseyIsTheBest/sa2-nx-installer) and
-[nfsmw-nx-installer](https://github.com/StevensND/nfsmw-nx-installer) by StevensND.
+renut_nx_ultimate_installer, itself built on the installers of rr6-nx, kameo-nx, banjo-nx, blur-nx, futari-nx and
+sa2-nx, and on [nfsmw-nx-installer](https://github.com/StevensND/nfsmw-nx-installer) by StevensND.
 
 Beautiful Katamari is a trademark of Bandai Namco Entertainment; the icon artwork is © Bandai Namco. This project is not
 affiliated with or endorsed by Bandai Namco, Nintendo or Microsoft.

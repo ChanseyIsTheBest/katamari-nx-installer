@@ -2,3 +2,8 @@
 * text=auto
 *.wasm binary
 *.png binary
+*.whl binary
+*.zip binary
+# The page checks every release file against the SHA-256 that release/manifest.json names for it, and GitHub Pages
+# serves the bytes git stores: git keeps release/ byte for byte (renut_nx_ultimate_installer, from blur-nx-installer).
+release/** -text

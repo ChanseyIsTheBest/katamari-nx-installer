@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
-# The NRO is not in this repository: it is an asset (katamari-nx.nro) of a release of the futari-nx repository of the same
-# owner. Each deployment downloads it into release/, checks it against release/manifest.json and publishes the page
-# with it. Run it by hand (Actions > Deploy to GitHub Pages > Run workflow) after publishing a new release there.
+# The NRO is not in this repository: it is an asset (katamari-nx.nro) of a release of the katamari-nx repository of the
+# same owner. Each deployment downloads it into release/, checks it and the other release files against
+# release/manifest.json and publishes the page with them. Run it by hand (Actions > Deploy to GitHub Pages > Run
+# workflow) after publishing a new release there.
 
 on:
   push:
@@ -43,17 +44,15 @@ jobs:
           REPO: ${{ github.repository_owner }}/katamari-nx
         run: gh release download $TAG --repo "$REPO" --pattern 'katamari-nx.nro' --dir release --clobber
 
-      - name: Check it against the list of builds
+      - name: Check the release files against the list of builds
         run: node .github/verify_release.mjs
-
-      - name: Check the page's own code
-        run: |
-          node test/texts_node.mjs
 
       - name: Assemble the site
         run: |
-          mkdir _site
-          cp -r index.html app.js worker.js sw.js icons renut_shader_common.h lib wasm release _site/
+          mkdir -p _site/wasm
+          cp -r index.html app.js worker.js glsl_worker.js uam_worker.js pack_worker.js sw.js icon.png game.json \
+            lib py vendor release _site/
+          cp wasm/*.mjs wasm/*.wasm _site/wasm/
 
       - uses: actions/configure-pages@v5
 

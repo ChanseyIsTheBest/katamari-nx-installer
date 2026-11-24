@@ -1,7 +1,16 @@
+# katamari-nx-installer (the renut_nx_ultimate_installer page): local tooling and test outputs (game data never belongs here)
 # The NRO is a release asset of the katamari-nx repository; the deployment workflow downloads it.
 release/*.nro
-# made by test/release_node.mjs for local tests: made from the game, never committed
+# made by the tests: made from the game, never committed
 release/deko3d_glsl.bin
-*.zip
-node_modules/
+.claude/
 __pycache__/
+*.log
+node_modules/
+wasm/src/*/build/
+test/out_*
+out/
+*.lz4b
+*.zip
+# Pyodide's standard library: the page loads it (blur-nx-installer de297ce found it never committed: shaders failed)
+!vendor/pyodide/python_stdlib.zip
